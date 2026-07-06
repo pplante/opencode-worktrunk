@@ -78,3 +78,37 @@ test("parseRemoveResult", () => {
     path: "/tmp/wt.del-me",
   });
 });
+
+test("parseSwitchResult - invalid json throws descriptive error", () => {
+  expect(() => parseSwitchResult("not json")).toThrow(
+    "parseSwitchResult failed"
+  );
+  expect(() => parseSwitchResult("not json")).toThrow("raw output");
+});
+
+test("parseListResult - invalid json throws descriptive error", () => {
+  expect(() => parseListResult("not json")).toThrow("parseListResult failed");
+  expect(() => parseListResult("not json")).toThrow("raw output");
+});
+
+test("parseMergeResult - invalid json throws descriptive error", () => {
+  expect(() => parseMergeResult("not json")).toThrow("parseMergeResult failed");
+  expect(() => parseMergeResult("not json")).toThrow("raw output");
+});
+
+test("parseRemoveResult - invalid json throws descriptive error", () => {
+  expect(() => parseRemoveResult("not json")).toThrow("parseRemoveResult failed");
+  expect(() => parseRemoveResult("not json")).toThrow("raw output");
+});
+
+test("parse failures include snippet of raw output", () => {
+  const raw = "x".repeat(300);
+  try {
+    parseSwitchResult(raw);
+    throw new Error("should have thrown");
+  } catch (e: any) {
+    expect(e.message).toContain("parseSwitchResult failed");
+    expect(e.message).toContain(raw.slice(0, 200));
+    expect(e.message.includes("x".repeat(201))).toBe(false);
+  }
+});

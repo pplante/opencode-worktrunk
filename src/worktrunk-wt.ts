@@ -76,7 +76,13 @@ export default (async ({ client, $, worktree: projectRoot }) => {
           });
           const stdout = await runWt(wtArgs);
           const result = parseSwitchResult(stdout);
-          await rebindDirectory(sessionID, result.path);
+          try {
+            await rebindDirectory(sessionID, result.path);
+          } catch (err: any) {
+            throw new Error(
+              `Worktree created at ${result.path} but session directory rebind failed: ${err.message}. The worktree exists on disk; inform the user they may need to restart opencode.`
+            );
+          }
           state.set(sessionID, {
             worktreePath: result.path,
             branch: result.branch,
@@ -108,7 +114,13 @@ export default (async ({ client, $, worktree: projectRoot }) => {
           });
           const stdout = await runWt(wtArgs);
           const result = parseSwitchResult(stdout);
-          await rebindDirectory(sessionID, result.path);
+          try {
+            await rebindDirectory(sessionID, result.path);
+          } catch (err: any) {
+            throw new Error(
+              `Worktree switched to at ${result.path} but session directory rebind failed: ${err.message}. The worktree exists on disk; inform the user they may need to restart opencode.`
+            );
+          }
           state.set(sessionID, {
             worktreePath: result.path,
             branch: result.branch,
@@ -160,7 +172,13 @@ export default (async ({ client, $, worktree: projectRoot }) => {
             );
           }
 
-          await rebindDirectory(sessionID, targetPath);
+          try {
+            await rebindDirectory(sessionID, targetPath);
+          } catch (err: any) {
+            throw new Error(
+              `Worktree merged to at ${targetPath} but session directory rebind failed: ${err.message}. The worktree exists on disk; inform the user they may need to restart opencode.`
+            );
+          }
           state.set(sessionID, {
             worktreePath: targetPath,
             branch: result.target,

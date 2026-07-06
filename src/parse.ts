@@ -28,14 +28,26 @@ export type RemoveEntry = {
   path: string;
 };
 
+function parseJson<T>(stdout: string, name: string): T {
+  try {
+    return JSON.parse(stdout) as T;
+  } catch (e: any) {
+    throw new Error(
+      `${name} failed: ${e.message} (raw output: ${stdout.slice(0, 200)})`
+    );
+  }
+}
+
 export function parseSwitchResult(stdout: string): SwitchResult {
-  const raw = JSON.parse(stdout) as {
-    action: string;
-    branch: string;
-    path: string;
-    created_branch?: boolean;
-    base_branch?: string;
-  };
+  const raw = parseJson<
+    {
+      action: string;
+      branch: string;
+      path: string;
+      created_branch?: boolean;
+      base_branch?: string;
+    }
+  >(stdout, "parseSwitchResult");
   return {
     action: raw.action,
     branch: raw.branch,
@@ -46,11 +58,13 @@ export function parseSwitchResult(stdout: string): SwitchResult {
 }
 
 export function parseListResult(stdout: string): ListEntry[] {
-  const raw = JSON.parse(stdout) as Array<{
-    branch: string;
-    path: string;
-    is_main?: boolean;
-  }>;
+  const raw = parseJson<
+    Array<{
+      branch: string;
+      path: string;
+      is_main?: boolean;
+    }>
+  >(stdout, "parseListResult");
   return raw.map((w) => ({
     branch: w.branch,
     path: w.path,
@@ -59,14 +73,14 @@ export function parseListResult(stdout: string): ListEntry[] {
 }
 
 export function parseMergeResult(stdout: string): MergeResult {
-  const raw = JSON.parse(stdout) as {
+  const raw = parseJson<{
     branch: string;
     committed: boolean;
     rebased: boolean;
     removed: boolean;
     squashed: boolean;
     target: string;
-  };
+  }>(stdout, "parseMergeResult");
   return {
     branch: raw.branch,
     committed: raw.committed,
@@ -78,12 +92,14 @@ export function parseMergeResult(stdout: string): MergeResult {
 }
 
 export function parseRemoveResult(stdout: string): RemoveEntry[] {
-  const raw = JSON.parse(stdout) as Array<{
-    branch: string;
-    branch_deleted?: boolean;
-    kind: string;
-    path: string;
-  }>;
+  const raw = parseJson<
+    Array<{
+      branch: string;
+      branch_deleted?: boolean;
+      kind: string;
+      path: string;
+    }>
+  >(stdout, "parseRemoveResult");
   return raw.map((w) => ({
     branch: w.branch,
     branchDeleted: w.branch_deleted ?? false,
