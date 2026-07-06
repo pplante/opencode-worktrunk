@@ -1,5 +1,7 @@
 # worktrunk sidebar Implementation Plan
 
+> **STATUS: BLOCKED (2026-07-06).** Do not resume without first resolving the cwd-rebind blocker documented in `docs/superpowers/notes/cwd-rebind-broken.md`. The sidebar itself is display-only and unaffected, but the server plugin's 5 tools (`worktrunk_create/switch/merge/list/remove`) silently fail to rebind the session cwd on opencode 1.17.13/1.17.14 — so an end-to-end verification of "agent switches → sidebar updates" won't work. The sidebar TUI plugin can still be built and rendered independently once we decide how to handle the rebind gap.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a read-only worktree list to the opencode sidebar that shows every worktree in the repo, marks the active one, and refreshes on session directory changes plus a 10s interval poll.
