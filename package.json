@@ -1,0 +1,8 @@
+{
+  "name": "opencode-worktrunk",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@opencode-ai/plugin": "1.15.13"
+  }
+}
