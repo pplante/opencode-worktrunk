@@ -336,8 +336,8 @@ git commit -m "feat: add worktrunk-sidebar TUI plugin (sidebar_content slot)"
 In `README.md`, replace the existing install code block:
 
 ```bash
-git clone <repo> ~/Projects/opencode-wt
-cd ~/Projects/opencode-wt
+git clone <repo> ~/Projects/opencode-worktrunk
+cd ~/Projects/opencode-worktrunk
 bun install
 ln -sf "$(pwd)/src/worktrunk-wt.ts" ~/.config/opencode/plugins/worktrunk-wt.ts
 ```
@@ -345,8 +345,8 @@ ln -sf "$(pwd)/src/worktrunk-wt.ts" ~/.config/opencode/plugins/worktrunk-wt.ts
 with:
 
 ```bash
-git clone <repo> ~/Projects/opencode-wt
-cd ~/Projects/opencode-wt
+git clone <repo> ~/Projects/opencode-worktrunk
+cd ~/Projects/opencode-worktrunk
 bun install
 ln -sf "$(pwd)/src/worktrunk-wt.ts"      ~/.config/opencode/plugins/worktrunk-wt.ts
 ln -sf "$(pwd)/src/worktrunk-sidebar.ts"  ~/.config/opencode/plugins/worktrunk-sidebar.ts

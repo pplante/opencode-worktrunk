@@ -1,5 +1,5 @@
 {
-  "name": "opencode-wt",
+  "name": "opencode-worktrunk",
   "version": "0.1.0",
   "description": "OpenCode plugin for Worktrunk worktree management",
   "type": "module",

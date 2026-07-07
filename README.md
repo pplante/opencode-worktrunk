@@ -24,8 +24,8 @@ After a create, switch, or merge, every tool (read, edit, bash, glob, grep, lsp)
 ## Install
 
 ```bash
-git clone <repo> ~/Projects/opencode-wt
-cd ~/Projects/opencode-wt
+git clone <repo> ~/Projects/opencode-worktrunk
+cd ~/Projects/opencode-worktrunk
 bun install
 ln -sf "$(pwd)/src/worktrunk-wt.ts"      ~/.config/opencode/plugins/worktrunk-wt.ts
 ln -sf "$(pwd)/src/worktrunk-sidebar.tsx"  ~/.config/opencode/plugins/worktrunk-sidebar.tsx

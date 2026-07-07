@@ -231,7 +231,7 @@ Manual, end-to-end in a scratch repo:
 ~/.config/opencode/plugins/worktrunk-wt.ts   # the plugin (single file)
 ```
 
-Repo (this repo, `opencode-wt`) holds only design + plan docs:
+Repo (this repo, `opencode-worktrunk`) holds only design + plan docs:
 
 ```
 docs/superpowers/specs/2026-07-05-opencode-worktrunk-plugin-design.md   # this file

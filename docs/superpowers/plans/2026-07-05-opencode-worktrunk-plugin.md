@@ -23,7 +23,7 @@
 ## File Structure
 
 ```
-/Users/phil/Projects/opencode-wt/
+/Users/phil/Projects/opencode-worktrunk/
 ├── package.json                 # bun project, @opencode-ai/plugin dep
 ├── src/
 │   ├── paths.ts                 # isUnderPath(child, parent), resolvePath(p)
@@ -1022,11 +1022,11 @@ git commit -m "feat: add worktrunk-wt plugin entry with 5 tools and 3 hooks"
 
 Run:
 ```bash
-cd /Users/phil/Projects/opencode-wt
+cd /Users/phil/Projects/opencode-worktrunk
 ln -sf "$(pwd)/src/worktrunk-wt.ts" ~/.config/opencode/plugins/worktrunk-wt.ts
 ls -la ~/.config/opencode/plugins/worktrunk-wt.ts
 ```
-Expected: symlink points to `/Users/phil/Projects/opencode-wt/src/worktrunk-wt.ts`.
+Expected: symlink points to `/Users/phil/Projects/opencode-worktrunk/src/worktrunk-wt.ts`.
 
 - [ ] **Step 2: Tell the user to restart opencode**
 
