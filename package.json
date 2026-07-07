@@ -1,7 +1,15 @@
 {
-  "name": "opencode-worktrunk",
+  "name": "opencode-wt",
   "private": true,
   "type": "module",
+  "exports": {
+    "./sidebar": {
+      "import": "./src/worktrunk-sidebar.tsx"
+    },
+    "./plugin": {
+      "import": "./src/worktrunk-wt.ts"
+    }
+  },
   "dependencies": {
     "@opencode-ai/plugin": "1.15.13"
   },
