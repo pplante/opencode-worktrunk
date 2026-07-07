@@ -1,17 +1,26 @@
 {
   "name": "opencode-wt",
-  "private": true,
+  "version": "0.1.0",
+  "description": "OpenCode plugin for Worktrunk worktree management",
   "type": "module",
   "exports": {
-    "./sidebar": {
-      "import": "./src/worktrunk-sidebar.tsx"
+    ".": {
+      "import": "./src/worktrunk-wt.ts"
     },
     "./plugin": {
       "import": "./src/worktrunk-wt.ts"
+    },
+    "./sidebar": {
+      "import": "./src/worktrunk-sidebar.tsx"
     }
   },
-  "dependencies": {
-    "@opencode-ai/plugin": "1.15.13"
+  "files": [
+    "src/**/*",
+    "package.json",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "@opencode-ai/plugin": "^1.15.13"
   },
   "devDependencies": {
     "@opentui/core": "0.2.16",
