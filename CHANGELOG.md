@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-07-07
+
+]0;opencode-wt: ready]0;opencode-wt: ready]0;opencode-wt: working]0;● opencode-wt: error]0;● opencode-wt: done
+
 ## [0.2.2] - 2026-07-07
 
 ### Added
