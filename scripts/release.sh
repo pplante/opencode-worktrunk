@@ -33,27 +33,69 @@ json.dump(p, open('$PACKAGE_JSON', 'w'), indent=2)
 print(p.get('name', '<unknown>') + ': ' + '$VERSION')
 "
 
-# Update CHANGELOG.md: insert new version above [Unreleased]
+# Build commit log since last tag
+LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
+if [ -n "$LAST_TAG" ]; then
+  COMMITS=$(git log --oneline --no-decorate "$LAST_TAG"..HEAD)
+else
+  COMMITS=$(git log --oneline --no-decorate)
+  LAST_TAG="(initial)"
+fi
+
+echo "Found $LAST_TAG..HEAD ($(echo "$COMMITS" | wc -l | tr -d ' ') commits)"
+
+# Generate changelog entry via opencode
 DATE=$(date +%Y-%m-%d)
-python3 -c "
-import re
-with open('$CHANGELOG') as f:
+ENTRY_FILE=$(mktemp)
+trap 'rm -f "$ENTRY_FILE"' EXIT
+
+if command -v opencode &>/dev/null; then
+  echo "Generating changelog via 'opencode run'..."
+  opencode run \
+    "Generate a CHANGELOG.md entry for version $VERSION (released $DATE).
+Analyze these git commits and categorize under: Added, Fixed, Changed, Deprecated, Removed, Security, Documentation.
+Use markdown bullet format with short descriptions.
+Output ONLY the section body (### headings + bullets), not the version heading and not the 'Unreleased' section.
+Be concise — one line per change. Here are the commits between $LAST_TAG and HEAD:
+
+$COMMITS" > "$ENTRY_FILE" 2>/dev/null || true
+fi
+
+ENTRY=$(cat "$ENTRY_FILE")
+if [ -z "$ENTRY" ]; then
+  echo "opencode run unavailable or returned empty — using placeholder entry."
+  ENTRY="### Added
+
+- (fill me)
+
+### Fixed
+
+- (fill me)"
+fi
+
+# Insert into CHANGELOG.md
+python3 << PYEOF
+with open("$CHANGELOG") as f:
     content = f.read()
 
-# Insert new entry after the header + blank line after 'Unreleased' header
 header = '# Changelog\n\n## [Unreleased]\n\n'
-entry = '## [$VERSION] - $DATE\n\n### Added\n\n- (fill me)\n\n### Fixed\n\n- (fill me)\n\n'
 if not content.startswith(header):
     print('Error: expected Unreleased section at top of CHANGELOG.md')
     exit(1)
+
+# Read entry from temp file
+with open("$ENTRY_FILE") as f:
+    entry = f.read().strip()
+
+new_section = f'## [$VERSION] - $DATE\n\n{entry}\n\n'
 rest = content[len(header):]
-new_content = header + entry + '\n' + rest
-with open('$CHANGELOG', 'w') as f:
+new_content = header + new_section + rest
+
+with open("$CHANGELOG", 'w') as f:
     f.write(new_content)
 print('CHANGELOG.md updated')
-"
+PYEOF
 
-# Show what's about to be released
 echo "---"
 echo "Releasing $TAG"
 echo "---"
