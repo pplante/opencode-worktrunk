@@ -11,6 +11,7 @@ Provides five tools to opencode agents:
 - **worktrunk_merge** — Merge the current branch into the target (default branch by default). Removes the worktree, session moves to the target.
 - **worktrunk_list** — List all worktrees. Marks the active one.
 - **worktrunk_remove** — Remove a worktree. Refuses if it's the active one.
+- **worktrunk sidebar** — A sidebar panel that lists every worktree in the repo and highlights the active one. Auto-refreshes on session switches and every 10s. Read-only; switching/removing still goes through the tools above.
 
 After a create, switch, or merge, every tool (read, edit, bash, glob, grep, lsp) operates from the worktree root. No permission prompts for in-worktree file edits.
 
@@ -26,7 +27,8 @@ After a create, switch, or merge, every tool (read, edit, bash, glob, grep, lsp)
 git clone <repo> ~/Projects/opencode-wt
 cd ~/Projects/opencode-wt
 bun install
-ln -sf "$(pwd)/src/worktrunk-wt.ts" ~/.config/opencode/plugins/worktrunk-wt.ts
+ln -sf "$(pwd)/src/worktrunk-wt.ts"      ~/.config/opencode/plugins/worktrunk-wt.ts
+ln -sf "$(pwd)/src/worktrunk-sidebar.tsx"  ~/.config/opencode/plugins/worktrunk-sidebar.tsx
 ```
 
 Restart opencode.
@@ -47,7 +49,9 @@ Pure helpers are extracted into testable modules. The plugin entry is thin glue.
 | `src/parse.ts` | Parsers for `wt --format json` output (switch, list, merge, remove) |
 | `src/args.ts` | CLI argument builders for each `wt` subcommand |
 | `src/state.ts` | Per-session state map (active worktree path + branch) |
-| `src/worktrunk-wt.ts` | Plugin entry — registers 5 tools and 3 hooks |
+| `src/sidebar.ts` | Pure helper: `formatSidebarRows` — turns `ListEntry[]` into renderable rows |
+| `src/worktrunk-wt.ts` | Server plugin entry — registers 5 tools and 3 hooks |
+| `src/worktrunk-sidebar.tsx` | TUI plugin entry — registers the `sidebar_content` slot, refreshes on session changes + 10s poll |
 
 The session cwd rebind uses opencode's SDK RPC `client.session.update({ query: { directory } })` — a stable, documented API. No experimental workarounds.
 
