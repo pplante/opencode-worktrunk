@@ -11,6 +11,7 @@ const tui: TuiPlugin = async (api) => {
   const projectRoot = api.state.path.worktree;
   const theme = api.theme;
   const [rows, setRows] = createSignal<SidebarRow[]>([]);
+  const [error, setError] = createSignal<string | null>(null);
   let refreshing = false;
 
   async function runWtList(): Promise<string> {
@@ -30,7 +31,9 @@ const tui: TuiPlugin = async (api) => {
       const list = parseListResult(stdout);
       const sessionDirectory = api.state.path.directory;
       setRows(formatSidebarRows(list, sessionDirectory));
+      setError(null);
     } catch (err: any) {
+      setError(err.message);
       console.error("[worktrunk-sidebar] refresh failed:", err.message);
     } finally {
       refreshing = false;
@@ -56,20 +59,23 @@ const tui: TuiPlugin = async (api) => {
     slots: {
       sidebar_content: () => {
         const current = rows();
-        if (current.length === 0) return null;
         const muted = theme.current.textMuted;
         return (
           <box flexDirection="column">
             <text fg={muted}>Worktrees</text>
-            {current.map((row) => (
-              <box flexDirection="column">
-                <text>
-                  {row.active ? "● " : "○ "}
-                  {row.branch}
-                </text>
-                <text fg={muted}> {row.basename}</text>
-              </box>
-            ))}
+            {current.length === 0 ? (
+              <text fg={muted}> {error() ? "(error)" : "(none)"}</text>
+            ) : (
+              current.map((row) => (
+                <box flexDirection="column">
+                  <text>
+                    {row.active ? "● " : "○ "}
+                    {row.branch}
+                  </text>
+                  <text fg={muted}> {row.basename}</text>
+                </box>
+              ))
+            )}
           </box>
         );
       },
@@ -77,5 +83,5 @@ const tui: TuiPlugin = async (api) => {
   });
 };
 
-const module: TuiPluginModule = { tui };
+const module: TuiPluginModule = { id: "worktrunk-sidebar", tui };
 export default module;

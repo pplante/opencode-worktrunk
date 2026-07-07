@@ -1,7 +1,5 @@
 # worktrunk sidebar Implementation Plan
 
-> **STATUS: BLOCKED (2026-07-06).** Do not resume without first resolving the cwd-rebind blocker documented in `docs/superpowers/notes/cwd-rebind-broken.md`. The sidebar itself is display-only and unaffected, but the server plugin's 5 tools (`worktrunk_create/switch/merge/list/remove`) silently fail to rebind the session cwd on opencode 1.17.13/1.17.14 — so an end-to-end verification of "agent switches → sidebar updates" won't work. The sidebar TUI plugin can still be built and rendered independently once we decide how to handle the rebind gap.
-
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a read-only worktree list to the opencode sidebar that shows every worktree in the repo, marks the active one, and refreshes on session directory changes plus a 10s interval poll.
@@ -204,6 +202,7 @@ Create `src/worktrunk-sidebar.ts`:
 
 ```ts
 import type { TuiPlugin, TuiPluginModule } from "@opencode-ai/plugin";
+import { $ } from "bun";
 import { buildListArgs } from "./args";
 import { parseListResult } from "./parse";
 import { formatSidebarRows } from "./sidebar";
@@ -217,7 +216,6 @@ const tui: TuiPlugin = async (api) => {
 
   async function runWtList(): Promise<string> {
     try {
-      const $ = (globalThis as any).Bun.$.-shell;
       return await $`wt -C ${projectRoot} ${buildListArgs()}`.quiet().text();
     } catch (err: any) {
       const stderr = err.stderr || err.stdout || err.message || "";
@@ -284,7 +282,7 @@ export default module;
 ```
 
 Notes on the implementation that the implementer MUST follow exactly:
-- The `$` shell is obtained off `globalThis.Bun.$` because the TUI plugin module does not receive `PluginInput.$` (that's only on server plugins). The `(globalThis as any).Bun.$.shell` access is the documented way to use Bun's shell from a TUI plugin context. If `Bun` is not available (non-Bun runtime), `runWtList` throws and the section stays hidden — that's the documented failure mode in the spec.
+- The `$` shell is imported from `"bun"` (`import { $ } from "bun"`) because the TUI plugin module does not receive `PluginInput.$` (that's only on server plugins). opencode IS a Bun app, so `"bun"` is a resolvable runtime module. If `Bun` is not available (non-Bun runtime), `runWtList` throws and the section stays hidden — that's the documented failure mode in the spec.
 - `api.state.path.worktree` and `api.state.path.directory` are accessed lazily inside `refresh()` for the directory (it can change after a `session.update`); `projectRoot` is captured once because opencode pins it for the life of the process.
 - Empty-state handling: the `render` function returns `null` when `rows().length === 0`, which collapses the slot — no dead space in the sidebar.
 - The `refreshing` flag serializes overlapping triggers; the second caller is dropped (not queued).
