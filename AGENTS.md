@@ -1,5 +1,13 @@
 # AGENTS.md
 
+## Workflow: Always use a worktree
+
+**ALWAYS do development work in a worktree, never directly on `main`.** Use `worktrunk_create` (or `wt create`) to create a worktree on a new branch before making any code changes.
+
+The ONLY exception is when the human explicitly says to work on main / directly in the current tree. Do not assume this — if unsure, create a worktree.
+
+After finishing work in a worktree, merge it back via `worktrunk_merge` (or let the human decide integration strategy).
+
 ## Commands
 
 - **Install deps:** `bun install`
