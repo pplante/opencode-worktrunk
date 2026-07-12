@@ -5,6 +5,9 @@ import { parseSwitchResult, parseListResult, parseMergeResult, parseRemoveResult
 import { isUnderPath, resolvePath } from "./paths";
 import { createState } from "./state";
 import { isWorktreeCommand, WORKTREE_BLOCK_MESSAGE } from "./intercept";
+import { buildBootstrap, BOOTSTRAP_SENTINEL } from "./bootstrap";
+
+const BOOTSTRAP = buildBootstrap();
 
 export default (async ({ $, worktree: projectRoot, serverUrl }) => {
   const state = createState();
@@ -274,6 +277,15 @@ export default (async ({ $, worktree: projectRoot, serverUrl }) => {
       if (isWorktreeCommand(command)) {
         throw new Error(WORKTREE_BLOCK_MESSAGE);
       }
+    },
+
+    "experimental.chat.messages.transform": async (_input, output) => {
+      if (!output.messages.length) return;
+      const firstUser = output.messages.find((m) => m.info.role === "user");
+      if (!firstUser || !firstUser.parts.length) return;
+      if (firstUser.parts.some((p) => p.type === "text" && p.text.includes(BOOTSTRAP_SENTINEL)))
+        return;
+      firstUser.parts.unshift({ type: "text", text: BOOTSTRAP });
     },
   };
 }) satisfies Plugin;
