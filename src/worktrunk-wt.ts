@@ -1,21 +1,12 @@
 import type { Plugin } from "@opencode-ai/plugin";
 import { tool } from "@opencode-ai/plugin";
-import {
-  buildSwitchArgs,
-  buildMergeArgs,
-  buildListArgs,
-  buildRemoveArgs,
-} from "./args";
-import {
-  parseSwitchResult,
-  parseListResult,
-  parseMergeResult,
-  parseRemoveResult,
-} from "./parse";
+import { buildSwitchArgs, buildMergeArgs, buildListArgs, buildRemoveArgs } from "./args";
+import { parseSwitchResult, parseListResult, parseMergeResult, parseRemoveResult } from "./parse";
 import { isUnderPath, resolvePath } from "./paths";
 import { createState } from "./state";
+import { isWorktreeCommand, WORKTREE_BLOCK_MESSAGE } from "./intercept";
 
-export default (async ({ client, $, worktree: projectRoot }) => {
+export default (async ({ $, worktree: projectRoot, serverUrl }) => {
   const state = createState();
 
   async function runWt(args: string[]): Promise<string> {
@@ -23,20 +14,24 @@ export default (async ({ client, $, worktree: projectRoot }) => {
       return await $`wt -C ${projectRoot} ${args}`.quiet().text();
     } catch (err: any) {
       const stderr = err.stderr || err.stdout || err.message || "";
-      throw new Error(
-        `wt ${args.join(" ")} failed (exit ${err.exitCode}): ${stderr.trim()}`
-      );
+      throw new Error(`wt ${args.join(" ")} failed (exit ${err.exitCode}): ${stderr.trim()}`);
     }
   }
 
-  async function rebindDirectory(
-    sessionID: string,
-    directory: string
-  ): Promise<void> {
-    await client.session.update({
-      path: { id: sessionID },
-      query: { directory },
+  async function rebindDirectory(sessionID: string, directory: string): Promise<void> {
+    const res = await fetch(new URL("/experimental/control-plane/move-session", serverUrl), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionID,
+        destination: { directory },
+        moveChanges: false,
+      }),
     });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`move-session failed (${res.status}): ${body}`);
+    }
   }
 
   async function resolveWorktreePath(branch: string): Promise<string | null> {
@@ -52,17 +47,15 @@ export default (async ({ client, $, worktree: projectRoot }) => {
         description:
           "Create a new git worktree on a new branch using worktrunk (wt). Switches the session's working directory to the new worktree. The agent then works from that worktree without permission prompts.",
         args: {
-          branch: tool
-            .schema.string()
-            .describe("New branch name for the worktree"),
-          base: tool
-            .schema.string()
+          branch: tool.schema.string().describe("New branch name for the worktree"),
+          base: tool.schema
+            .string()
             .optional()
             .describe(
-              "Base branch to create from (defaults to default branch). Supports: ^, @, -, pr:{N}"
+              "Base branch to create from (defaults to default branch). Supports: ^, @, -, pr:{N}",
             ),
-          noHooks: tool
-            .schema.boolean()
+          noHooks: tool.schema
+            .boolean()
             .optional()
             .describe("Skip wt project hooks (pre-start, etc.)"),
         },
@@ -80,7 +73,7 @@ export default (async ({ client, $, worktree: projectRoot }) => {
             await rebindDirectory(sessionID, result.path);
           } catch (err: any) {
             throw new Error(
-              `Worktree created at ${result.path} but session directory rebind failed: ${err.message}. The worktree exists on disk; inform the user they may need to restart opencode.`
+              `Worktree created at ${result.path} but session directory rebind failed: ${err.message}. The worktree exists on disk; inform the user they may need to restart opencode.`,
             );
           }
           state.set(sessionID, {
@@ -95,15 +88,10 @@ export default (async ({ client, $, worktree: projectRoot }) => {
         description:
           "Switch the session to an existing git worktree using worktrunk (wt). Creates a worktree for the branch if one doesn't exist yet (but the branch must already exist). Switches the session's working directory to the worktree. Use worktrunk_create to create a new branch.",
         args: {
-          branch: tool
-            .schema.string()
-            .describe(
-              "Branch name to switch to. Supports: ^, @, -, pr:{N}"
-            ),
-          noHooks: tool
-            .schema.boolean()
-            .optional()
-            .describe("Skip wt project hooks"),
+          branch: tool.schema
+            .string()
+            .describe("Branch name to switch to. Supports: ^, @, -, pr:{N}"),
+          noHooks: tool.schema.boolean().optional().describe("Skip wt project hooks"),
         },
         async execute(args, context) {
           const { sessionID } = context;
@@ -118,7 +106,7 @@ export default (async ({ client, $, worktree: projectRoot }) => {
             await rebindDirectory(sessionID, result.path);
           } catch (err: any) {
             throw new Error(
-              `Worktree switched to at ${result.path} but session directory rebind failed: ${err.message}. The worktree exists on disk; inform the user they may need to restart opencode.`
+              `Worktree switched to at ${result.path} but session directory rebind failed: ${err.message}. The worktree exists on disk; inform the user they may need to restart opencode.`,
             );
           }
           state.set(sessionID, {
@@ -133,26 +121,19 @@ export default (async ({ client, $, worktree: projectRoot }) => {
         description:
           "Merge the current branch into the target branch (defaults to default branch) using worktrunk (wt). Squashes and rebases by default. Removes the current worktree after merge and switches the session to the target branch's worktree. If project hooks need approval and haven't been approved, the merge will fail — tell the user to run 'wt config approvals add'.",
         args: {
-          target: tool
-            .schema.string()
+          target: tool.schema
+            .string()
             .optional()
-            .describe(
-              "Target branch to merge into (defaults to default branch)"
-            ),
-          noRemove: tool
-            .schema.boolean()
-            .optional()
-            .describe("Keep the worktree after merging"),
-          noSquash: tool
-            .schema.boolean()
+            .describe("Target branch to merge into (defaults to default branch)"),
+          noRemove: tool.schema.boolean().optional().describe("Keep the worktree after merging"),
+          noSquash: tool.schema
+            .boolean()
             .optional()
             .describe("Preserve individual commits (no squash)"),
-          noHooks: tool
-            .schema.boolean()
+          noHooks: tool.schema
+            .boolean()
             .optional()
-            .describe(
-              "Skip wt project hooks (pre-merge, pre-remove, etc.)"
-            ),
+            .describe("Skip wt project hooks (pre-merge, pre-remove, etc.)"),
         },
         async execute(args, context) {
           const { sessionID } = context;
@@ -168,7 +149,7 @@ export default (async ({ client, $, worktree: projectRoot }) => {
           const targetPath = await resolveWorktreePath(result.target);
           if (!targetPath) {
             throw new Error(
-              `Merge succeeded but could not find worktree for target branch "${result.target}". Run 'wt list' to check.`
+              `Merge succeeded but could not find worktree for target branch "${result.target}". Run 'wt list' to check.`,
             );
           }
 
@@ -176,7 +157,7 @@ export default (async ({ client, $, worktree: projectRoot }) => {
             await rebindDirectory(sessionID, targetPath);
           } catch (err: any) {
             throw new Error(
-              `Worktree merged to at ${targetPath} but session directory rebind failed: ${err.message}. The worktree exists on disk; inform the user they may need to restart opencode.`
+              `Worktree merged to at ${targetPath} but session directory rebind failed: ${err.message}. The worktree exists on disk; inform the user they may need to restart opencode.`,
             );
           }
           state.set(sessionID, {
@@ -210,13 +191,8 @@ export default (async ({ client, $, worktree: projectRoot }) => {
         description:
           "Remove a git worktree and its branch (if merged) using worktrunk (wt). Cannot remove the worktree the session is currently in — switch to another worktree first.",
         args: {
-          branch: tool
-            .schema.string()
-            .describe("Branch name of the worktree to remove"),
-          noHooks: tool
-            .schema.boolean()
-            .optional()
-            .describe("Skip wt project hooks"),
+          branch: tool.schema.string().describe("Branch name of the worktree to remove"),
+          noHooks: tool.schema.boolean().optional().describe("Skip wt project hooks"),
         },
         async execute(args, context) {
           const { directory, sessionID } = context;
@@ -226,7 +202,7 @@ export default (async ({ client, $, worktree: projectRoot }) => {
 
           if (!target) {
             throw new Error(
-              `No worktree found for branch "${args.branch}". Run 'worktrunk_list' to see available worktrees.`
+              `No worktree found for branch "${args.branch}". Run 'worktrunk_list' to see available worktrees.`,
             );
           }
 
@@ -234,17 +210,14 @@ export default (async ({ client, $, worktree: projectRoot }) => {
           const resolvedTarget = resolvePath(target.path);
           if (isUnderPath(resolvedDir, resolvedTarget)) {
             throw new Error(
-              `Cannot remove the active worktree (branch "${args.branch}"). Use worktrunk_switch to switch to another worktree first.`
+              `Cannot remove the active worktree (branch "${args.branch}"). Use worktrunk_switch to switch to another worktree first.`,
             );
           }
 
           const entry = state.get(sessionID);
-          if (
-            entry &&
-            resolvePath(entry.worktreePath) === resolvedTarget
-          ) {
+          if (entry && resolvePath(entry.worktreePath) === resolvedTarget) {
             throw new Error(
-              `Cannot remove the active worktree (branch "${args.branch}"). Use worktrunk_switch to switch to another worktree first.`
+              `Cannot remove the active worktree (branch "${args.branch}"). Use worktrunk_switch to switch to another worktree first.`,
             );
           }
 
@@ -266,8 +239,8 @@ export default (async ({ client, $, worktree: projectRoot }) => {
       const patterns = Array.isArray(input.pattern)
         ? input.pattern
         : input.pattern
-        ? [input.pattern]
-        : [];
+          ? [input.pattern]
+          : [];
       if (patterns.length === 0) return;
       const wtPath = resolvePath(entry.worktreePath);
       const allUnder = patterns.every((p) => {
@@ -291,6 +264,15 @@ export default (async ({ client, $, worktree: projectRoot }) => {
         if (typeof sessionID === "string") {
           state.clear(sessionID);
         }
+      }
+    },
+
+    "tool.execute.before": async (input, output) => {
+      if (input.tool !== "bash") return;
+      const command = output.args?.command;
+      if (typeof command !== "string") return;
+      if (isWorktreeCommand(command)) {
+        throw new Error(WORKTREE_BLOCK_MESSAGE);
       }
     },
   };
