@@ -12,12 +12,15 @@ const BOOTSTRAP = buildBootstrap();
 export default (async ({ $, worktree: projectRoot, serverUrl }) => {
   const state = createState();
 
-  async function runWt(args: string[]): Promise<string> {
+  async function runWt(args: string[], opts?: { nothrow?: boolean }): Promise<string> {
+    let cmd = $`wt -C ${projectRoot} ${args}`.quiet();
+    if (opts?.nothrow) cmd = cmd.nothrow();
     try {
-      return await $`wt -C ${projectRoot} ${args}`.quiet().text();
+      return await cmd.text();
     } catch (err: any) {
-      const stderr = err.stderr || err.stdout || err.message || "";
-      throw new Error(`wt ${args.join(" ")} failed (exit ${err.exitCode}): ${stderr.trim()}`);
+      const raw = err.stderr ?? err.stdout ?? err.message ?? "";
+      const text = typeof raw === "string" ? raw : new TextDecoder().decode(raw);
+      throw new Error(`wt ${args.join(" ")} failed (exit ${err.exitCode}): ${text.trim()}`);
     }
   }
 
@@ -146,7 +149,7 @@ export default (async ({ $, worktree: projectRoot, serverUrl }) => {
             noSquash: args.noSquash ?? undefined,
             noHooks: args.noHooks ?? undefined,
           });
-          const stdout = await runWt(wtArgs);
+          const stdout = await runWt(wtArgs, { nothrow: true });
           const result = parseMergeResult(stdout);
 
           const targetPath = await resolveWorktreePath(result.target);
