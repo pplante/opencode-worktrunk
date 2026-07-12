@@ -3,7 +3,7 @@ import type { TuiPlugin, TuiPluginModule } from "@opencode-ai/plugin/tui";
 import { $ } from "bun";
 import { buildListArgs } from "./args";
 import { parseListResult } from "./parse";
-import { formatSidebarRows } from "./sidebar";
+import { formatSidebarRows, partitionRows } from "./sidebar";
 import type { SidebarRow } from "./sidebar";
 import { createSignal } from "solid-js";
 
@@ -61,9 +61,9 @@ const tui: TuiPlugin = async (api) => {
   api.slots.register({
     slots: {
       sidebar_content: () => {
-        const current = rows();
+        const all = rows();
         const t = theme.current;
-        const activeRow = current.find((r) => r.active);
+        const { current, others } = partitionRows(all);
         const toggle = () => setCollapsed(!collapsed());
         return (
           <box
@@ -76,53 +76,55 @@ const tui: TuiPlugin = async (api) => {
             paddingLeft={1}
             paddingRight={1}
           >
-            <box
-              flexDirection="row"
-              justifyContent="space-between"
-              alignItems="center"
-              onMouseDown={() => toggle()}
-            >
+            <box flexDirection="row" justifyContent="space-between" alignItems="center">
               <box paddingLeft={1} paddingRight={1} backgroundColor={t.accent}>
                 <text fg={t.background}>
-                  <b>{collapsed() ? "▶ " : "▼ "}Worktrees</b>
+                  <b>{"Worktrees"}</b>
                 </text>
               </box>
-              <text fg={t.textMuted}>{current.length}</text>
+              <text fg={t.textMuted}>{all.length}</text>
             </box>
 
-            {!collapsed() && (
-              <box flexDirection="column" marginTop={1}>
-                {current.length === 0 ? (
-                  <text fg={t.textMuted}>
-                    {" "}
-                    {error() ? "(error)" : "(none)"}
+            {current && (
+              <box flexDirection="row" marginTop={1} justifyContent="space-between">
+                <box flexDirection="row">
+                  <text fg={t.accent}>● </text>
+                  <text fg={t.text}>
+                    <b>{current.branch}</b>
                   </text>
-                ) : (
-                  current.map((row) => (
-                    <box flexDirection="column">
-                      <box flexDirection="row">
-                        <text fg={row.active ? t.accent : t.textMuted}>
-                          {row.active ? "● " : "○ "}
-                        </text>
-                        <text fg={row.active ? t.text : t.textMuted}>
-                          {row.active ? <b>{row.branch}</b> : row.branch}
-                        </text>
+                </box>
+                {current.status.length > 0 && <text fg={t.textMuted}> {current.status}</text>}
+              </box>
+            )}
+
+            {others.length > 0 && (
+              <box flexDirection="column" marginTop={1}>
+                <box
+                  flexDirection="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  onMouseDown={() => toggle()}
+                >
+                  <text fg={t.textMuted}>
+                    <b>{collapsed() ? "▶ " : "▼ "}Other</b>
+                  </text>
+                  <text fg={t.textMuted}>{others.length}</text>
+                </box>
+
+                {!collapsed() && (
+                  <box flexDirection="column" marginTop={1}>
+                    {others.map((row) => (
+                      <box flexDirection="row" justifyContent="space-between">
+                        <text fg={t.textMuted}>○ {row.branch}</text>
+                        {row.status.length > 0 && <text fg={t.textMuted}> {row.status}</text>}
                       </box>
-                      <text fg={t.textMuted}> {row.basename}</text>
-                    </box>
-                  ))
+                    ))}
+                  </box>
                 )}
               </box>
             )}
 
-            {collapsed() && activeRow && (
-              <box flexDirection="row" marginTop={1}>
-                <text fg={t.accent}>● </text>
-                <text fg={t.text}>
-                  <b>{activeRow.branch}</b>
-                </text>
-              </box>
-            )}
+            {all.length === 0 && <text fg={t.textMuted}> {error() ? "(error)" : "(none)"}</text>}
           </box>
         );
       },
