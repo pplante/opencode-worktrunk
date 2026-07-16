@@ -9,8 +9,20 @@ import { buildBootstrap, BOOTSTRAP_SENTINEL } from "./bootstrap";
 
 const BOOTSTRAP = buildBootstrap();
 
-export default (async ({ $, worktree: projectRoot, serverUrl }) => {
+export default (async ({ $, worktree: projectRoot, client }) => {
   const state = createState();
+
+  const httpClient = (
+    client as unknown as {
+      _client: {
+        post: (opts: { url: string; body: unknown; headers: Record<string, string> }) => Promise<{
+          data?: unknown;
+          error?: unknown;
+          response?: { status: number };
+        }>;
+      };
+    }
+  )._client;
 
   async function runWt(args: string[], opts?: { nothrow?: boolean }): Promise<string> {
     let cmd = $`wt -C ${projectRoot} ${args}`.quiet();
@@ -25,18 +37,19 @@ export default (async ({ $, worktree: projectRoot, serverUrl }) => {
   }
 
   async function rebindDirectory(sessionID: string, directory: string): Promise<void> {
-    const res = await fetch(new URL("/experimental/control-plane/move-session", serverUrl), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const result = await httpClient.post({
+      url: "/experimental/control-plane/move-session",
+      body: {
         sessionID,
         destination: { directory },
         moveChanges: false,
-      }),
+      },
+      headers: { "Content-Type": "application/json" },
     });
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      throw new Error(`move-session failed (${res.status}): ${body}`);
+    if (result.error) {
+      throw new Error(
+        `move-session failed (${result.response?.status ?? "unknown"}): ${JSON.stringify(result.error)}`,
+      );
     }
   }
 
