@@ -8,6 +8,7 @@ import { isWorktreeCommand, WORKTREE_BLOCK_MESSAGE } from "./intercept";
 import { buildBootstrap, BOOTSTRAP_SENTINEL } from "./bootstrap";
 
 const BOOTSTRAP = buildBootstrap();
+const PERMISSION_MUTATION_TYPES = new Set(["external_directory", "edit", "write", "patch"]);
 
 export default (async ({ $, worktree: projectRoot, client }) => {
   const state = createState();
@@ -252,7 +253,7 @@ export default (async ({ $, worktree: projectRoot, client }) => {
     },
 
     "permission.ask": async (input, output) => {
-      if (input.type !== "external_directory") return;
+      if (!PERMISSION_MUTATION_TYPES.has(input.type)) return;
       const entry = state.get(input.sessionID);
       if (!entry) return;
       const patterns = Array.isArray(input.pattern)
