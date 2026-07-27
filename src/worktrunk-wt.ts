@@ -203,13 +203,42 @@ export default (async ({ $, worktree: projectRoot, client }) => {
           noSquash: args.noSquash ?? undefined,
           noHooks: args.noHooks ?? undefined,
         });
+
+        // Build branch->path map BEFORE merge removes source worktree
+        let branchMap: Record<string, string> = {};
+        try {
+          const listStdout = await runWt(buildListArgs());
+          branchMap = Object.fromEntries(
+            parseListResult(listStdout).map((w) => [w.branch, w.path]),
+          );
+        } catch {
+          // List failed -- we'll try resolveWorktreePath after merge as fallback
+        }
+
+        // Run merge (nothrow because wt merge may exit non-zero even on success -- see #175)
         const stdout = await runWt(wtArgs, { nothrow: true });
+        if (!stdout.trim()) {
+          throw new Error(
+            "wt merge produced no output. The merge likely failed -- check for unapproved hooks " +
+              "(run 'wt config approvals add') or merge conflicts.",
+          );
+        }
         const result = parseMergeResult(stdout);
 
-        const targetPath = await resolveWorktreePath(result.target);
+        // Use pre-built map to find target worktree; fall back to resolveWorktreePath
+        let targetPath = branchMap[result.target] ?? null;
+        if (!targetPath) {
+          try {
+            targetPath = await resolveWorktreePath(result.target);
+          } catch (err: any) {
+            // resolveWorktreePath may fail if projectRoot points to removed worktree
+          }
+        }
+
         if (!targetPath) {
           throw new Error(
-            `Merge succeeded but could not find worktree for target branch "${result.target}". Run 'wt list' to check.`,
+            `Merge succeeded but could not find worktree for target branch "${result.target}". ` +
+              `Run 'wt list' to check.`,
           );
         }
 
