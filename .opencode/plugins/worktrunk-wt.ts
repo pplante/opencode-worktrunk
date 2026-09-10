@@ -1,1 +1,0 @@
-../../src/worktrunk-wt.ts
