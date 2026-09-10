@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.2.8] - 2026-09-10
+
+[skills-as-commands] Injected 47 skills as slash commands (15 skipped due to existing command), 62 total discovered
+
 ## [0.2.7] - 2026-07-12
 
 ]0;opencode-wt: ready]0;opencode-wt: ready]0;opencode-wt: working]0;● opencode-wt: error]0;● opencode-wt: done
