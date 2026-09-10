@@ -62,9 +62,7 @@ export default (async ({ $, worktree: projectRoot, client }) => {
       headers: { "Content-Type": "application/json" },
     });
     if (result.error) {
-      throw new Error(
-        `move-session failed (${result.response?.status ?? "unknown"}): ${JSON.stringify(result.error)}`,
-      );
+      throw new Error(`move-session failed (${result.response?.status ?? "unknown"}): ${JSON.stringify(result.error)}`);
     }
   }
 
@@ -111,13 +109,8 @@ export default (async ({ $, worktree: projectRoot, client }) => {
         base: tool.schema
           .string()
           .optional()
-          .describe(
-            "Base branch to create from (defaults to default branch). Supports: ^, @, -, pr:{N}",
-          ),
-        noHooks: tool.schema
-          .boolean()
-          .optional()
-          .describe("Skip wt project hooks (pre-start, etc.)"),
+          .describe("Base branch to create from (defaults to default branch). Supports: ^, @, -, pr:{N}"),
+        noHooks: tool.schema.boolean().optional().describe("Skip wt project hooks (pre-start, etc.)"),
       },
       async execute(args, context) {
         const { sessionID } = context;
@@ -148,9 +141,7 @@ export default (async ({ $, worktree: projectRoot, client }) => {
       description:
         "Switch the session to an existing git worktree using worktrunk (wt). Creates a worktree for the branch if one doesn't exist yet (but the branch must already exist). Switches the session's working directory to the worktree. Use worktrunk_create to create a new branch.",
       args: {
-        branch: tool.schema
-          .string()
-          .describe("Branch name to switch to. Supports: ^, @, -, pr:{N}"),
+        branch: tool.schema.string().describe("Branch name to switch to. Supports: ^, @, -, pr:{N}"),
         noHooks: tool.schema.boolean().optional().describe("Skip wt project hooks"),
       },
       async execute(args, context) {
@@ -181,19 +172,10 @@ export default (async ({ $, worktree: projectRoot, client }) => {
       description:
         "Merge the current branch into the target branch (defaults to default branch) using worktrunk (wt). Squashes and rebases by default. Removes the current worktree after merge and switches the session to the target branch's worktree. If project hooks need approval and haven't been approved, the merge will fail — tell the user to run 'wt config approvals add'.",
       args: {
-        target: tool.schema
-          .string()
-          .optional()
-          .describe("Target branch to merge into (defaults to default branch)"),
+        target: tool.schema.string().optional().describe("Target branch to merge into (defaults to default branch)"),
         noRemove: tool.schema.boolean().optional().describe("Keep the worktree after merging"),
-        noSquash: tool.schema
-          .boolean()
-          .optional()
-          .describe("Preserve individual commits (no squash)"),
-        noHooks: tool.schema
-          .boolean()
-          .optional()
-          .describe("Skip wt project hooks (pre-merge, pre-remove, etc.)"),
+        noSquash: tool.schema.boolean().optional().describe("Preserve individual commits (no squash)"),
+        noHooks: tool.schema.boolean().optional().describe("Skip wt project hooks (pre-merge, pre-remove, etc.)"),
       },
       async execute(args, context) {
         const { sessionID } = context;
@@ -208,9 +190,7 @@ export default (async ({ $, worktree: projectRoot, client }) => {
         let branchMap: Record<string, string> = {};
         try {
           const listStdout = await runWt(buildListArgs());
-          branchMap = Object.fromEntries(
-            parseListResult(listStdout).map((w) => [w.branch, w.path]),
-          );
+          branchMap = Object.fromEntries(parseListResult(listStdout).map((w) => [w.branch, w.path]));
         } catch {
           // List failed -- we'll try resolveWorktreePath after merge as fallback
         }
@@ -230,7 +210,7 @@ export default (async ({ $, worktree: projectRoot, client }) => {
         if (!targetPath) {
           try {
             targetPath = await resolveWorktreePath(result.target);
-          } catch (err: any) {
+          } catch {
             // resolveWorktreePath may fail if projectRoot points to removed worktree
           }
         }
@@ -342,11 +322,7 @@ export default (async ({ $, worktree: projectRoot, client }) => {
       if (!PERMISSION_MUTATION_TYPES.has(input.type)) return;
       const entry = state.get(input.sessionID);
       if (!entry) return;
-      const patterns = Array.isArray(input.pattern)
-        ? input.pattern
-        : input.pattern
-          ? [input.pattern]
-          : [];
+      const patterns = Array.isArray(input.pattern) ? input.pattern : input.pattern ? [input.pattern] : [];
       if (patterns.length === 0) return;
       const wtPath = resolvePath(entry.worktreePath);
       const allUnder = patterns.every((p) => {
@@ -386,8 +362,7 @@ export default (async ({ $, worktree: projectRoot, client }) => {
       if (!output.messages.length) return;
       const firstUser = output.messages.find((m) => m.info.role === "user");
       if (!firstUser || !firstUser.parts.length) return;
-      if (firstUser.parts.some((p) => p.type === "text" && p.text.includes(BOOTSTRAP_SENTINEL)))
-        return;
+      if (firstUser.parts.some((p) => p.type === "text" && p.text.includes(BOOTSTRAP_SENTINEL))) return;
       firstUser.parts.unshift({ type: "text", text: BOOTSTRAP });
     },
   };

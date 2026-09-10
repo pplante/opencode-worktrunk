@@ -1,10 +1,5 @@
 import { test, expect } from "bun:test";
-import {
-  buildSwitchArgs,
-  buildMergeArgs,
-  buildListArgs,
-  buildRemoveArgs,
-} from "./args";
+import { buildSwitchArgs, buildMergeArgs, buildListArgs, buildRemoveArgs } from "./args";
 
 test("buildSwitchArgs - create new branch", () => {
   expect(buildSwitchArgs({ branch: "feat", create: true })).toEqual([
@@ -25,7 +20,7 @@ test("buildSwitchArgs - create with base and noHooks", () => {
       create: true,
       base: "develop",
       noHooks: true,
-    })
+    }),
   ).toEqual([
     "switch",
     "--create",
@@ -52,12 +47,7 @@ test("buildSwitchArgs - switch to existing", () => {
 });
 
 test("buildMergeArgs - defaults", () => {
-  expect(buildMergeArgs({})).toEqual([
-    "merge",
-    "--format",
-    "json",
-    "-y",
-  ]);
+  expect(buildMergeArgs({})).toEqual(["merge", "--format", "json", "-y"]);
 });
 
 test("buildMergeArgs - all options", () => {
@@ -67,7 +57,7 @@ test("buildMergeArgs - all options", () => {
       noRemove: true,
       noSquash: true,
       noHooks: true,
-    })
+    }),
   ).toEqual([
     "merge",
     "--no-remove",
@@ -81,12 +71,7 @@ test("buildMergeArgs - all options", () => {
 });
 
 test("buildListArgs", () => {
-  expect(buildListArgs()).toEqual([
-    "list",
-    "--format",
-    "json",
-    "-y",
-  ]);
+  expect(buildListArgs()).toEqual(["list", "--format", "json", "-y"]);
 });
 
 test("buildRemoveArgs - basic", () => {
