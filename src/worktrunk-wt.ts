@@ -206,7 +206,7 @@ export default (async ({ $, worktree: projectRoot, client }) => {
         const result = parseMergeResult(stdout);
 
         // Use pre-built map to find target worktree; fall back to resolveWorktreePath
-        let targetPath = branchMap[result.target] ?? null;
+        let targetPath: string | null = branchMap[result.target] ?? null;
         if (!targetPath) {
           try {
             targetPath = await resolveWorktreePath(result.target);
@@ -363,7 +363,7 @@ export default (async ({ $, worktree: projectRoot, client }) => {
       const firstUser = output.messages.find((m) => m.info.role === "user");
       if (!firstUser || !firstUser.parts.length) return;
       if (firstUser.parts.some((p) => p.type === "text" && p.text.includes(BOOTSTRAP_SENTINEL))) return;
-      firstUser.parts.unshift({ type: "text", text: BOOTSTRAP });
+      firstUser.parts.unshift({ type: "text", text: BOOTSTRAP } as (typeof firstUser.parts)[number]);
     },
   };
 }) satisfies Plugin;

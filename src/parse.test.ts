@@ -179,3 +179,71 @@ test("parseListResult falls back to 0 ahead/behind when neither remote nor main 
   expect(rows[0].dirty).toBe(false);
   expect(rows[0].isCurrent).toBe(false);
 });
+
+const SCHEMA_V2_LIST_FIXTURE = JSON.stringify({
+  schema: 2,
+  repo: { default_branch: "main" },
+  collected: { ci: false, summary: false },
+  items: [
+    {
+      branch: "main",
+      head: { sha: "abc", short_sha: "abc", subject: "init", committed_at: "2026-09-10T18:07:01Z" },
+      worktree: {
+        path: "/repo/main",
+        main: true,
+        current: true,
+        previous: false,
+        detached: false,
+        branch_mismatch: false,
+        duplicate_branch: false,
+        changes: { staged: false, modified: true, untracked: false, renamed: false, deleted: false, conflicted: false },
+      },
+      default_branch: { ahead: 0, behind: 0, orphan: false },
+      display: { state: "is_main", symbols: "@" },
+    },
+    {
+      branch: "feat",
+      head: { sha: "def", short_sha: "def", subject: "wip", committed_at: "2026-09-10T18:07:01Z" },
+      worktree: {
+        path: "/repo/feat",
+        main: false,
+        current: false,
+        previous: true,
+        detached: false,
+        branch_mismatch: false,
+        duplicate_branch: false,
+        changes: { staged: false, modified: false, untracked: false, renamed: false, deleted: false, conflicted: true },
+      },
+      default_branch: { ahead: 2, behind: 1, orphan: false },
+      display: { state: "same_commit", symbols: "!?" },
+    },
+  ],
+});
+
+test("parseListResult handles schema-2 envelope with items array", () => {
+  const rows = parseListResult(SCHEMA_V2_LIST_FIXTURE);
+  expect(rows).toHaveLength(2);
+
+  const main = rows[0];
+  expect(main.branch).toBe("main");
+  expect(main.path).toBe("/repo/main");
+  expect(main.isMain).toBe(true);
+  expect(main.isCurrent).toBe(true);
+  expect(main.isPrevious).toBe(false);
+  expect(main.mainState).toBe("is_main");
+  expect(main.ahead).toBe(0);
+  expect(main.behind).toBe(0);
+  expect(main.dirty).toBe(true);
+
+  const feat = rows[1];
+  expect(feat.path).toBe("/repo/feat");
+  expect(feat.isMain).toBe(false);
+  expect(feat.isPrevious).toBe(true);
+  expect(feat.ahead).toBe(2);
+  expect(feat.behind).toBe(1);
+  expect(feat.dirty).toBe(true);
+});
+
+test("parseListResult rejects envelope without items array", () => {
+  expect(() => parseListResult(JSON.stringify({ schema: 2 }))).toThrow("unexpected shape");
+});

@@ -65,6 +65,7 @@ type RawWorkingTree = {
   untracked?: boolean;
   renamed?: boolean;
   deleted?: boolean;
+  conflicted?: boolean;
 };
 
 type RawListEntry = {
@@ -79,27 +80,49 @@ type RawListEntry = {
   main?: { ahead?: number; behind?: number };
 };
 
+type RawListItem = RawListEntry & {
+  worktree?: {
+    path?: string;
+    main?: boolean;
+    current?: boolean;
+    previous?: boolean;
+    changes?: RawWorkingTree;
+  };
+  default_branch?: { ahead?: number; behind?: number };
+  display?: { state?: string };
+};
+
 function isDirty(wt: RawWorkingTree | undefined): boolean {
   if (!wt) return false;
-  return Boolean(wt.modified || wt.staged || wt.untracked || wt.renamed || wt.deleted);
+  return Boolean(wt.modified || wt.staged || wt.untracked || wt.renamed || wt.deleted || wt.conflicted);
+}
+
+function normalizeListEntry(w: RawListItem): ListEntry {
+  const sync = w.remote ?? w.main ?? w.default_branch ?? {};
+  return {
+    branch: w.branch,
+    path: w.worktree?.path ?? w.path,
+    isMain: w.worktree?.main ?? w.is_main ?? false,
+    isCurrent: w.worktree?.current ?? w.is_current ?? false,
+    isPrevious: w.worktree?.previous ?? w.is_previous ?? false,
+    mainState: w.main_state ?? w.display?.state,
+    ahead: sync.ahead ?? 0,
+    behind: sync.behind ?? 0,
+    dirty: isDirty(w.worktree?.changes ?? w.working_tree),
+  };
 }
 
 export function parseListResult(stdout: string): ListEntry[] {
-  const raw = parseJson<RawListEntry[]>(stdout, "parseListResult");
-  return raw.map((w) => {
-    const sync = w.remote ?? w.main ?? {};
-    return {
-      branch: w.branch,
-      path: w.path,
-      isMain: w.is_main ?? false,
-      isCurrent: w.is_current ?? false,
-      isPrevious: w.is_previous ?? false,
-      mainState: w.main_state,
-      ahead: sync.ahead ?? 0,
-      behind: sync.behind ?? 0,
-      dirty: isDirty(w.working_tree),
-    };
-  });
+  const parsed = parseJson<unknown>(stdout, "parseListResult");
+  const items = Array.isArray(parsed)
+    ? parsed
+    : typeof parsed === "object" && parsed !== null && Array.isArray((parsed as { items?: unknown }).items)
+      ? ((parsed as { items: unknown[] }).items as RawListItem[])
+      : null;
+  if (!items) {
+    throw new Error(`parseListResult failed: unexpected shape (raw output: ${stdout.slice(0, 200)})`);
+  }
+  return (items as RawListItem[]).map(normalizeListEntry);
 }
 
 export function parseMergeResult(stdout: string): MergeResult {
