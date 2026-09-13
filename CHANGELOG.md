@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-13
+
+Changelog body from three commits.
+### Added
+- Support opencode v1 and v2
+### Changed
+- Updated repo layout so plugin loads correctly in opencode
+- Switched out some tools
+### Removed
+- Dropped sidebar support
+### Documentation
+- Removed stale sidebar/TUI mention from AGENTS.md
+
 ## [0.2.8] - 2026-09-10
 
 [skills-as-commands] Injected 47 skills as slash commands (15 skipped due to existing command), 62 total discovered
