@@ -30,7 +30,7 @@ All `wt` calls use: `wt -C <projectRoot>` (v1: PluginInput.worktree, v2: `ctx.lo
 - No code comments unless explicitly requested.
 - snake_case JSON fields from `wt` output are converted to camelCase in parse helpers.
 - Each `wt` subcommand has a paired arg builder and parser. If adding a new command, add both.
-- Pure helpers have zero side effects (no I/O, no SDK calls). All side-effectful logic lives in the entries (`worktrunk-wt.ts`, `server.ts`, sidebar/tui).
+- Pure helpers have zero side effects (no I/O, no SDK calls). All side-effectful logic lives in the entries (`worktrunk-wt.ts`, `server.ts`).
 - Tests use real JSON fixtures from probing `wt --format json`. No mocks.
 
 ## Working with the code
