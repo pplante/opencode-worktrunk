@@ -1,87 +1,126 @@
 # Changelog
 
-## [Unreleased]
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.3.1] - 2026-09-13
+
+### Changed
+- Switch to git-cliff for release notes
 
 ## [0.3.0] - 2026-09-13
 
-Changelog body from three commits.
 ### Added
-- Support opencode v1 and v2
+- Support opencode v1 and v2, drop sidebar by @pplante
+
 ### Changed
-- Updated repo layout so plugin loads correctly in opencode
-- Switched out some tools
-### Removed
-- Dropped sidebar support
-### Documentation
-- Removed stale sidebar/TUI mention from AGENTS.md
+- V0.3.0 by @pplante
+- Drop stale sidebar/tui mention from AGENTS.md by @pplante
+- Switch some tools out, updated repo layout so it loads in opencode correctly by @pplante
 
 ## [0.2.8] - 2026-09-10
 
-[skills-as-commands] Injected 47 skills as slash commands (15 skipped due to existing command), 62 total discovered
+### Changed
+- V0.2.8 by @pplante
+- Ignored file by @pplante
+- Expose wt aliases as per-alias tools by @pplante
+- Auto-allow edit/write/patch under worktree by @pplante
 
-## [0.2.7] - 2026-07-12
+### Fixed
+- Handle empty stdout from wt merge + resolve target path before merge removes worktree by @pplante
+- Authenticate session rebind via injected client by @pplante
 
-]0;opencode-wt: ready]0;opencode-wt: ready]0;opencode-wt: working]0;● opencode-wt: error]0;● opencode-wt: done
+## [0.2.7] - 2026-07-13
 
-## [0.2.6] - 2026-07-12
+### Changed
+- V0.2.7 by @pplante
 
-]0;opencode-wt: ready]0;opencode-wt: ready]0;opencode-wt: working]0;● opencode-wt: error]0;● opencode-wt: done
+## [0.2.6] - 2026-07-13
 
-## [0.2.5] - 2026-07-12
+### Changed
+- V0.2.6 by @pplante
 
-]0;opencode-wt: ready]0;opencode-wt: ready]0;opencode-wt: working]0;● opencode-wt: error]0;● opencode-wt: done
+## [0.2.5] - 2026-07-13
+
+### Changed
+- V0.2.5 by @pplante
+- Inject worktrunk bootstrap instructions into session by @pplante
+- Capture worktree status in sidebar by @pplante
+- Implementation plan for current-first sidebar + status icons by @pplante
+- Spec for current-first sidebar layout + status icons by @pplante
+- Enforce worktree-first development workflow in AGENTS.md by @pplante
+- Restyle sidebar with magic-context theme + collapsible header by @pplante
+- Move-session API + block raw wt commands by @pplante
+
+### Fixed
+- Rebind session after merge even when wt exits non-zero by @pplante
 
 ## [0.2.4] - 2026-07-07
 
-]0;opencode-wt: ready]0;opencode-wt: ready]0;opencode-wt: working]0;● opencode-wt: error]0;● opencode-wt: done
+### Changed
+- V0.2.4 by @pplante
+
+### Fixed
+- Fix package name by @pplante
 
 ## [0.2.3] - 2026-07-07
 
-]0;opencode-wt: ready]0;opencode-wt: ready]0;opencode-wt: working]0;● opencode-wt: error]0;● opencode-wt: done
+### Changed
+- V0.2.3 by @pplante
 
 ## [0.2.2] - 2026-07-07
 
-### Added
-
-- Release script (`scripts/release.sh`) with `opencode run` for changelog generation.
+### Changed
+- Bump to 0.2.2 and clean CHANGELOG by @pplante
 
 ## [0.2.1] - 2026-07-07
 
-### Fixed
-
-- Repo name changed to `opencode-worktrunk` across all files.
-
-### Documentation
-
-- CHANGELOG.md added.
-- Published to npm.
+### Changed
+- V0.2.1 by @pplante
 
 ## [0.2.0] - 2026-07-07
 
 ### Added
+- Add release script and CHANGELOG.md by @pplante
+- Add exports for git-installed tui and server plugins by @pplante
+- Add id field to TUI plugin module (required for file-based loader) by @pplante
+- Add worktrunk-sidebar install + architecture entry by @pplante
+- Add worktrunk-sidebar TUI plugin (sidebar_content slot) by @pplante
+- Add formatSidebarRows pure helper for sidebar rendering by @pplante
+- Add worktrunk sidebar design + implementation plan by @pplante
+- Add README and AGENTS.md by @pplante
+- Add error context for JSON parse failures and session rebind failures by @pplante
+- Add @types/node devDependency for tsc by @pplante
+- Add worktrunk-wt plugin entry with 5 tools and 3 hooks by @pplante
+- Add per-session state map by @pplante
+- Add wt CLI argument builders by @pplante
+- Add wt JSON output parsers by @pplante
+- Add isUnderPath path comparison utility by @pplante
 
-- `worktrunk-sidebar` TUI plugin: renders worktree list in opencode sidebar with active/inactive bullets, polls every 10s, refreshes on session change.
-- `formatSidebarRows` pure helper for sidebar rendering.
-- Commit message generation via `opencode run` in release script.
+### Changed
+- V0.2.0 by @pplante
+- Use opencode run for changelog generation in release script by @pplante
+- Rename package and paths from opencode-wt to opencode-worktrunk by @pplante
+- Prepare package for npm publish v0.1.0 by @pplante
+- Mark sidebar plan blocked; add cwd-rebind-broken note by @pplante
+- Scaffold bun project with @opencode-ai/plugin dep by @pplante
+- Opencode-worktrunk plugin implementation plan by @pplante
+- Opencode-worktrunk plugin design spec by @pplante
 
-### Fixed
+### New Contributors
+* @pplante made their first contribution
 
-- TUI plugin module `id` field required for file-based loader.
+[0.3.1]: https://github.com/pplante/opencode-worktrunk/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/pplante/opencode-worktrunk/compare/v0.2.8...v0.3.0
+[0.2.8]: https://github.com/pplante/opencode-worktrunk/compare/v0.2.7...v0.2.8
+[0.2.7]: https://github.com/pplante/opencode-worktrunk/compare/v0.2.6...v0.2.7
+[0.2.6]: https://github.com/pplante/opencode-worktrunk/compare/v0.2.5...v0.2.6
+[0.2.5]: https://github.com/pplante/opencode-worktrunk/compare/v0.2.4...v0.2.5
+[0.2.4]: https://github.com/pplante/opencode-worktrunk/compare/v0.2.3...v0.2.4
+[0.2.3]: https://github.com/pplante/opencode-worktrunk/compare/v0.2.2...v0.2.3
+[0.2.2]: https://github.com/pplante/opencode-worktrunk/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/pplante/opencode-worktrunk/compare/v0.2.0...v0.2.1
 
-## [0.1.0] - 2026-07-07
-
-### Added
-
-- `worktrunk-wt` server plugin: 5 tools (create, switch, list, merge, remove) and 3 hooks (session.updated, session.directory, permission.ask).
-- `buildListArgs`, `parseListResult`, `parseSwitchResult`, `resolvePath`, `isUnderPath` pure helpers with tests.
-- Per-session state tracking for repository root.
-
-### Fixed
-
-- Error context attached to `wt` JSON parse and session rebind failures.
-
-### Documentation
-
-- README with install, architecture, and usage instructions.
-- AGENTS.md with development commands and conventions.
-- Design spec and implementation plan for all features.
+<!-- generated by git-cliff -->
