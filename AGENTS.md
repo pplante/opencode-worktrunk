@@ -23,7 +23,7 @@ TypeScript opencode plugin supporting v1 and v2 from separate entries over share
 
 Session cwd is rebound via `session.move` (v2) or the control-plane move endpoint (v1) after each create/switch/merge.
 
-All `wt` calls use: `wt -C <projectRoot>` (v1: PluginInput.worktree, v2: `ctx.location.project.canonical`), `--no-cd` (switch only), `--format json` (stdout), `-y` (non-interactive). V2 runs `wt` via `node:child_process` since the v2 context provides no Bun `$` helper.
+All `wt` calls use `--format json` (stdout), `-y` (non-interactive), `--no-cd` (switch only), and `wt -C <dir>` for repo lookup (v1: PluginInput.worktree, v2: `ctx.location.project.canonical`). `merge` (and alias execution) point `-C` at the session's current worktree instead: `wt merge` acts on the current branch, so running it from `projectRoot` merges the wrong branch. `merge` also refuses `branch === target` results as no-ops. V2 runs `wt` via `node:child_process` since the v2 context provides no Bun `$` helper.
 
 ## Code Conventions
 
