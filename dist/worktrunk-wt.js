@@ -94,6 +94,9 @@ function parseMergeResult(stdout) {
     target: raw.target
   };
 }
+function isNoOpMerge(result) {
+  return result.branch === result.target;
+}
 function parseRemoveResult(stdout) {
   const raw = parseJson(stdout, "parseRemoveResult");
   return raw.map((w) => ({
@@ -331,23 +334,37 @@ var worktrunk_wt_default = async ({ $, worktree: projectRoot, client }) => {
         noHooks: tool.schema.boolean().optional().describe("Skip wt project hooks (pre-merge, pre-remove, etc.)")
       },
       async execute(args, context) {
-        const { sessionID } = context;
+        const { sessionID, directory } = context;
         const wtArgs = buildMergeArgs({
           target: args.target ?? undefined,
           noRemove: args.noRemove ?? undefined,
           noSquash: args.noSquash ?? undefined,
           noHooks: args.noHooks ?? undefined
         });
+        const cwd = directory ?? projectRoot;
         let branchMap = {};
+        let sourceBranch = null;
+        let defaultBranch = null;
         try {
-          const listStdout = await runWt(buildListArgs());
-          branchMap = Object.fromEntries(parseListResult(listStdout).map((w) => [w.branch, w.path]));
+          const listStdout = await runWt(buildListArgs(), { cwd });
+          const list = parseListResult(listStdout);
+          branchMap = Object.fromEntries(list.map((w) => [w.branch, w.path]));
+          const resolvedCwd = resolvePath(cwd);
+          sourceBranch = list.find((w) => isUnderPath(resolvedCwd, resolvePath(w.path)))?.branch ?? state.get(sessionID)?.branch ?? null;
+          defaultBranch = list.find((w) => w.isMain)?.branch ?? null;
         } catch {}
-        const stdout = await runWt(wtArgs, { nothrow: true });
+        const effectiveTarget = args.target ?? defaultBranch ?? null;
+        if (sourceBranch && effectiveTarget && sourceBranch === effectiveTarget) {
+          throw new Error(`Merge refused: session is in "${sourceBranch}", which is already the target branch. ` + `Switch to the feature worktree first (worktrunk_switch), then merge. Nothing was merged.`);
+        }
+        const stdout = await runWt(wtArgs, { nothrow: true, cwd });
         if (!stdout.trim()) {
           throw new Error("wt merge produced no output. The merge likely failed -- check for unapproved hooks " + "(run 'wt config approvals add') or merge conflicts.");
         }
         const result = parseMergeResult(stdout);
+        if (isNoOpMerge(result)) {
+          throw new Error(`wt merge merged nothing: it ran in "${result.branch}", which is also the target. ` + `The session was in "${sourceBranch ?? cwd}". Switch to the feature worktree first (worktrunk_switch), then merge. ` + `Verify with 'wt list' -- the feature branch should still exist with its commits.`);
+        }
         let targetPath = branchMap[result.target] ?? null;
         if (!targetPath) {
           try {

@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { parseSwitchResult, parseListResult, parseMergeResult, parseRemoveResult } from "./parse";
+import { parseSwitchResult, parseListResult, parseMergeResult, parseRemoveResult, isNoOpMerge } from "./parse";
 
 test("parseSwitchResult - created", () => {
   const json =
@@ -246,4 +246,16 @@ test("parseListResult handles schema-2 envelope with items array", () => {
 
 test("parseListResult rejects envelope without items array", () => {
   expect(() => parseListResult(JSON.stringify({ schema: 2 }))).toThrow("unexpected shape");
+});
+
+test("isNoOpMerge - self-merge is a no-op", () => {
+  expect(
+    isNoOpMerge({ branch: "main", committed: false, rebased: false, removed: false, squashed: false, target: "main" }),
+  ).toBe(true);
+});
+
+test("isNoOpMerge - feature into main is a real merge", () => {
+  expect(
+    isNoOpMerge({ branch: "feat", committed: false, rebased: false, removed: true, squashed: false, target: "main" }),
+  ).toBe(false);
 });

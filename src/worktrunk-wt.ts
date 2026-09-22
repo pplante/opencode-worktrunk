@@ -1,7 +1,7 @@
 import type { Plugin } from "@opencode-ai/plugin";
 import { tool, type ToolDefinition } from "@opencode-ai/plugin";
 import { buildSwitchArgs, buildMergeArgs, buildListArgs, buildRemoveArgs } from "./args";
-import { parseSwitchResult, parseListResult, parseMergeResult, parseRemoveResult } from "./parse";
+import { parseSwitchResult, parseListResult, parseMergeResult, parseRemoveResult, isNoOpMerge } from "./parse";
 import { isUnderPath, resolvePath } from "./paths";
 import { createState } from "./state";
 import { isWorktreeCommand, WORKTREE_BLOCK_MESSAGE } from "./intercept";
@@ -178,7 +178,7 @@ export default (async ({ $, worktree: projectRoot, client }) => {
         noHooks: tool.schema.boolean().optional().describe("Skip wt project hooks (pre-merge, pre-remove, etc.)"),
       },
       async execute(args, context) {
-        const { sessionID } = context;
+        const { sessionID, directory } = context;
         const wtArgs = buildMergeArgs({
           target: args.target ?? undefined,
           noRemove: args.noRemove ?? undefined,
@@ -186,17 +186,36 @@ export default (async ({ $, worktree: projectRoot, client }) => {
           noHooks: args.noHooks ?? undefined,
         });
 
+        const cwd = directory ?? projectRoot;
+
         // Build branch->path map BEFORE merge removes source worktree
         let branchMap: Record<string, string> = {};
+        let sourceBranch: string | null = null;
+        let defaultBranch: string | null = null;
         try {
-          const listStdout = await runWt(buildListArgs());
-          branchMap = Object.fromEntries(parseListResult(listStdout).map((w) => [w.branch, w.path]));
+          const listStdout = await runWt(buildListArgs(), { cwd });
+          const list = parseListResult(listStdout);
+          branchMap = Object.fromEntries(list.map((w) => [w.branch, w.path]));
+          const resolvedCwd = resolvePath(cwd);
+          sourceBranch =
+            list.find((w) => isUnderPath(resolvedCwd, resolvePath(w.path)))?.branch ??
+            state.get(sessionID)?.branch ??
+            null;
+          defaultBranch = list.find((w) => w.isMain)?.branch ?? null;
         } catch {
           // List failed -- we'll try resolveWorktreePath after merge as fallback
         }
 
+        const effectiveTarget = args.target ?? defaultBranch ?? null;
+        if (sourceBranch && effectiveTarget && sourceBranch === effectiveTarget) {
+          throw new Error(
+            `Merge refused: session is in "${sourceBranch}", which is already the target branch. ` +
+              `Switch to the feature worktree first (worktrunk_switch), then merge. Nothing was merged.`,
+          );
+        }
+
         // Run merge (nothrow because wt merge may exit non-zero even on success -- see #175)
-        const stdout = await runWt(wtArgs, { nothrow: true });
+        const stdout = await runWt(wtArgs, { nothrow: true, cwd });
         if (!stdout.trim()) {
           throw new Error(
             "wt merge produced no output. The merge likely failed -- check for unapproved hooks " +
@@ -204,6 +223,13 @@ export default (async ({ $, worktree: projectRoot, client }) => {
           );
         }
         const result = parseMergeResult(stdout);
+        if (isNoOpMerge(result)) {
+          throw new Error(
+            `wt merge merged nothing: it ran in "${result.branch}", which is also the target. ` +
+              `The session was in "${sourceBranch ?? cwd}". Switch to the feature worktree first (worktrunk_switch), then merge. ` +
+              `Verify with 'wt list' -- the feature branch should still exist with its commits.`,
+          );
+        }
 
         // Use pre-built map to find target worktree; fall back to resolveWorktreePath
         let targetPath: string | null = branchMap[result.target] ?? null;

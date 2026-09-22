@@ -1,7 +1,7 @@
 import { execFile, type ExecException } from "node:child_process";
 import { Plugin } from "@opencode/plugin";
 import { buildSwitchArgs, buildMergeArgs, buildListArgs, buildRemoveArgs } from "./args";
-import { parseSwitchResult, parseListResult, parseMergeResult, parseRemoveResult } from "./parse";
+import { parseSwitchResult, parseListResult, parseMergeResult, parseRemoveResult, isNoOpMerge } from "./parse";
 import { isUnderPath, resolvePath } from "./paths";
 import { createState } from "./state";
 import { isWorktreeCommand, WORKTREE_BLOCK_MESSAGE } from "./intercept";
@@ -193,14 +193,39 @@ export default Plugin.define({
             noHooks: args.noHooks ?? undefined,
           });
 
-          let branchMap: Record<string, string> = {};          try {
-            const listStdout = await runWt(projectRoot, buildListArgs());
-            branchMap = Object.fromEntries(parseListResult(listStdout).map((w) => [w.branch, w.path]));
+          let cwd: string = projectRoot;
+          try {
+            cwd = await sessionDirectory(tool.sessionID);
+          } catch {
+            cwd = projectRoot;
+          }
+
+          let branchMap: Record<string, string> = {};
+          let sourceBranch: string | null = null;
+          let defaultBranch: string | null = null;
+          try {
+            const listStdout = await runWt(projectRoot, buildListArgs(), { cwd });
+            const list = parseListResult(listStdout);
+            branchMap = Object.fromEntries(list.map((w) => [w.branch, w.path]));
+            const resolvedCwd = resolvePath(cwd);
+            sourceBranch =
+              list.find((w) => isUnderPath(resolvedCwd, resolvePath(w.path)))?.branch ??
+              state.get(tool.sessionID)?.branch ??
+              null;
+            defaultBranch = list.find((w) => w.isMain)?.branch ?? null;
           } catch {
             // List failed -- we'll try resolveWorktreePath after merge as fallback
           }
 
-          const stdout = await runWt(projectRoot, wtArgs, { nothrow: true });
+          const effectiveTarget = args.target ?? defaultBranch ?? null;
+          if (sourceBranch && effectiveTarget && sourceBranch === effectiveTarget) {
+            throw new Error(
+              `Merge refused: session is in "${sourceBranch}", which is already the target branch. ` +
+                `Switch to the feature worktree first (worktrunk_switch), then merge. Nothing was merged.`,
+            );
+          }
+
+          const stdout = await runWt(projectRoot, wtArgs, { nothrow: true, cwd });
           if (!stdout.trim()) {
             throw new Error(
               "wt merge produced no output. The merge likely failed -- check for unapproved hooks " +
@@ -208,6 +233,13 @@ export default Plugin.define({
             );
           }
           const result = parseMergeResult(stdout);
+          if (isNoOpMerge(result)) {
+            throw new Error(
+              `wt merge merged nothing: it ran in "${result.branch}", which is also the target. ` +
+                `The session was in "${sourceBranch ?? cwd}". Switch to the feature worktree first (worktrunk_switch), then merge. ` +
+                `Verify with 'wt list' -- the feature branch should still exist with its commits.`,
+            );
+          }
 
           let targetPath: string | null = branchMap[result.target] ?? null;
           if (!targetPath) {

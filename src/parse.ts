@@ -144,6 +144,10 @@ export function parseMergeResult(stdout: string): MergeResult {
   };
 }
 
+export function isNoOpMerge(result: MergeResult): boolean {
+  return result.branch === result.target;
+}
+
 export function parseRemoveResult(stdout: string): RemoveEntry[] {
   const raw = parseJson<
     Array<{
