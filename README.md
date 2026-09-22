@@ -39,7 +39,7 @@ V2 (package):
 }
 ```
 
-V2 loads `server` from package exports. No symlinks needed.
+V2 loads `server` from package exports. No symlinks needed. For a local checkout path, run `bun install` in it first — `dist/` keeps `@opencode/plugin` external and won't load without `node_modules`.
 
 Restart opencode.
 
